@@ -14,7 +14,8 @@
 | 2 | [Database](./02-database/README.md) | Desain ERD, skema tabel, dan relasi antar entitas |
 | 3 | [Backend](./03-backend/README.md) | Struktur proyek, setup environment, autentikasi, dan chatbot |
 | 4 | [API](./04-api/README.md) | Konsep REST API dan dokumentasi seluruh endpoint |
-| 5 | [Deployment](./05-deployment/README.md) | Panduan deployment dengan Docker dan VPS |
+| 5 | [Deployment](./05-deployment/README.md) | Panduan deployment VPS dengan Nginx, PM2, dan Certbot |
+| 6 | [Flutter UI & Slicing](./06-flutter/README.md) | Tahap desain UI (Figma) hingga implementasi slicing Flutter |
 
 ---
 

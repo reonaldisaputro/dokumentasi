@@ -3,14 +3,13 @@
 ## Daftar Isi
 
 1. [Konsep Deployment](#konsep-deployment)
-2. [Deployment dengan Docker](./docker.md)
-3. [Deployment ke VPS](./vps-deployment.md)
+2. [Deployment ke VPS](./vps-deployment.md)
 
 ---
 
 ## Konsep Deployment
 
-**Deployment** adalah proses mempublikasikan aplikasi dari lingkungan pengembangan (lokal) ke server yang bisa diakses oleh pengguna nyata (produksi).
+**Deployment** adalah proses mempublikasikan aplikasi dari lingkungan pengembangan (lokal) ke server yang bisa diakses pengguna nyata (produksi).
 
 ### Perbedaan Environment
 
@@ -19,28 +18,48 @@
 | `APP_ENV` | `local` | `production` |
 | `APP_DEBUG` | `true` | `false` |
 | `APP_URL` | `http://localhost:8000` | `https://domain.com` |
-| Database | MySQL lokal | MySQL server |
-| File storage | Local disk | Server/cloud |
+| Web Server | `php artisan serve` | Nginx + PHP-FPM |
+| Proses Daemon | Manual | PM2 |
+| HTTPS | Tidak | Ya (Certbot / Let's Encrypt) |
 | Error display | Detail lengkap | Pesan umum saja |
 | Cache | Tidak dicache | Config & route dicache |
 
-### Strategi Deployment Bengkelin
-
-Bengkelin menggunakan **Docker** untuk membungkus aplikasi dan seluruh dependensinya ke dalam container yang konsisten:
+### Stack Deployment Bengkelin
 
 ```
-Lokal (Mac/Windows/Linux)
-    ↓  push ke Git
-Server VPS (Ubuntu)
-    ↓  git pull
-    ↓  docker-compose up
-Aplikasi berjalan di server
-    ↓  
-Bisa diakses via: https://api.bengkelin.com
+Internet
+    │
+    ▼
+┌──────────────────────────────────────┐
+│           VPS (Ubuntu)               │
+│                                      │
+│  ┌──────────────────────────────┐    │
+│  │   Nginx (Port 80 / 443)      │    │  ← Web server + reverse proxy
+│  │   + Certbot (SSL)            │    │
+│  └──────────────┬───────────────┘    │
+│                 │ FastCGI            │
+│  ┌──────────────▼───────────────┐    │
+│  │   PHP-FPM (PHP 8.x)          │    │  ← Proses PHP application
+│  └──────────────────────────────┘    │
+│                                      │
+│  ┌──────────────────────────────┐    │
+│  │   MySQL 8.0                  │    │  ← Database
+│  └──────────────────────────────┘    │
+│                                      │
+│  ┌──────────────────────────────┐    │
+│  │   PM2                        │    │  ← Daemon manager untuk
+│  │   - queue:work               │    │    background Laravel processes
+│  │   - schedule:run             │    │
+│  └──────────────────────────────┘    │
+└──────────────────────────────────────┘
 ```
 
-**Keuntungan menggunakan Docker:**
-1. **Konsistensi** — Aplikasi berjalan sama persis di semua environment
-2. **Isolasi** — Tiap service (PHP, Nginx, MySQL) terpisah, tidak konflik
-3. **Portabilitas** — Mudah dipindah ke server lain
-4. **Skalabilitas** — Mudah ditambah container jika traffic meningkat
+### Peran Setiap Komponen
+
+| Komponen | Peran |
+|----------|-------|
+| **Nginx** | Menerima request HTTP/HTTPS, melayani file statis, meneruskan request PHP ke PHP-FPM |
+| **PHP-FPM** | Menjalankan kode PHP Laravel secara efisien sebagai proses terpisah |
+| **MySQL** | Menyimpan seluruh data aplikasi |
+| **PM2** | Menjaga proses background Laravel (queue worker, scheduler) tetap berjalan sebagai daemon |
+| **Certbot** | Mendapatkan dan memperpanjang sertifikat SSL/TLS dari Let's Encrypt secara otomatis |
